@@ -1,0 +1,53 @@
+body {
+    display: flex;
+    justify-content: center; /* Центрира хоризонтално */
+    align-items: flex-start; /* Позиционира се отгоре */
+    min-height: 100vh;
+    margin: 0;
+    background-color: #e0f7e9; /* Светъл зелен фон */
+}
+
+.registration-form {
+    background-color: #ccf2d6; /* Светъл зелен цвят за формата */
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 80%; /* Ширина в проценти за адаптация */
+    max-width: 400px; /* Максимална ширина за по-големи екрани */
+    margin-top: 50px; /* Отстояние от горната част */
+}
+
+.registration-form input,
+.registration-form select,
+.registration-form button {
+    width: 100%;
+    padding: 8px;
+    margin: 6px 0;
+    border: 1px solid #b2d8b2;
+    border-radius: 4px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.registration-form input:focus,
+.registration-form select:focus {
+    border-color: #4caf50; /* Зелен контур при фокус */
+    box-shadow: 0 0 5px #4caf50;
+    outline: none;
+}
+
+.registration-form button {
+    background-color: #b2d8b2;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.registration-form button:hover {
+    background-color: #1aa63b;
+}
+
+.registration-form button:focus,
+.registration-form button:active {
+    background-color: #4caf50; /* Зелен цвят при фокус или натискане */
+    outline: none;
+}

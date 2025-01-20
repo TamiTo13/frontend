@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Уязвимости в уеб приложения - Несигурна десериализация (OWASP-A8)</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+    
+    <button onclick="toggleTheme()">Смяна на тема</button>
+    <div class="container">
+        <nav class="side-menu">
+            <ul>
+                <li><a href="#serialization">Сериализация</a></li>
+                <li><a href="#about">Какво е несигурна десериализация?</a></li>
+                <li><a href="#example-scenario">Примерен сценарий</a></li>
+                <li><a href="#attacks">Типични атаки</a></li>
+                <li><a href="#attack-scenarios">Примери за атаки</a></li>
+                <li><a href="#protection">Как да се защитим?</a></li>
+                <li><a href="#prevention">Как да предотвратим?</a></li>
+                <li><a href="#conclusion">Заключение</a></li>
+                <li><a href="#sources">Източници</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="serialization">
+            <h2>Какво е Сериализация?</h2>
+            <button onclick="toggleSerialization('serialization-content')" style="margin-bottom: 10px;">Показване/Скриване на Секцията</button>
+            <div id="serialization-content">
+                <p>Сериализацията е процес, при който обектите се преобразуват в поток от байтове. Този поток може да бъде съхранен като файл, записан в база данни или използван за прехвърляне на данни между различни приложения.</p>
+                <p>Това е изключително полезна техника, защото приложенията могат да имат напълно различна вътрешна структура. Сериализацията позволява обмен на данни и комуникация между тях, независимо от тези различия.</p>
+                <p>На диаграмата по-долу е илюстриран този процес:</p>
+                <img src="D:\Лекции\4 Курс\WEB\project\Picture.png" alt="Serialization Diagram" style="max-width: 100%; height: auto;">
+            </div>
+        </section>
+
+        <!-- Останалият HTML е непроменен -->
+        <section id="about">
+            <h1>Какво е несигурна десериализация?</h1>
+            <button onclick="toggleSerialization('about-content')" style="margin-bottom: 10px;">Показване/Скриване на Секцията</button>
+            <div id="about-content">
+            <p>Несигурната десериализация е уязвимост в уеб приложенията..Несигурната десериализация е вид уязвимост, която възниква, когато недоверени данни се използват за злоупотреба с логиката на процеса на десериализация на дадено приложение, позволявайки на атакуващия да изпълнява код, да манипулира обекти или да извършва атаки чрез инжектиране.
+              <p>Сериализацията представлява преобразуване на обект във формат, който може да бъде съхранен (например във файл или памет) или предаден (например по мрежа) и възстановен по-късно. Десериализацията е обратният процес – преобразуване на сериализираните данни обратно в оригиналния обект.</p>
+              <p>Много програмни езици предлагат вградена възможност за сериализация на обекти. Тези собствени формати обикновено предоставят повече функции от JSON или XML, включително възможност за персонализиране на процеса на сериализация. За съжаление, функциите на тези механизми за десериализация могат да бъдат използвани за злонамерени цели, когато се прилагат върху недоверени данни. Атаките срещу десериализатори са установени като възможност за осъществяване на атаки за отказ от услуга (DoS), заобикаляне на контрола на достъпа и изпълнение на отдалечен код (RCE).</p>
+                .</p>
+            </div>
+        </section>
+
+        <section id="example-scenario">
+            <h2>Примерен сценарий</h2>
+            <button onclick="toggleSerialization('exampleScen-content')" style="margin-bottom: 10px;">Показване/Скриване на Секцията</button>
+            <div id = "exampleScen-content">
+            <p>
+                Да предположим, че Java приложение използва сериализация, за да запази обект <strong>SessionData</strong> на твърдия диск на потребителя. Обектът съдържа ID на сесията на потребителя. Примерният Java код може да изглежда така:
+            </p>
+            
+            <pre><code class="language-java">
+                <button onclick="copyCode('example-scenario')">Копирай кода</button>
+        import java.io.*;
+        
+        public class SerializeSession {
+            public static void main(String[] args) {
+                SessionData session = new SessionData();
+                session.setUser("bob");
+        
+                try {
+                    FileOutputStream fos = new FileOutputStream("sessionData.ser");
+                    ObjectOutputStream oos = new ObjectOutputStream(fos);
+                    oos.writeObject(session);
+                    oos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+        class SessionData implements Serializable {
+            private String user;
+            
+            public void setUser(String user) {
+                this.user = user;
+            }
+        
+            public String getUser() {
+                return user;
+            }
+        }
+            </code></pre>
+        
+            <p>
+                Методът <code>writeObject()</code> сериализира обекта <code>session</code> във файл, наречен <code>sessionData.ser</code>. 
+                Сега да предположим, че приложението по-късно чете този сериализиран обект от файла:
+            </p>
+        
+            <pre><code class="language-java">
+                <button onclick="copyCode('example-scenario')">Копирай кода</button>
+        import java.io.*;
+        
+        public class DeserializeSession {
+            public static void main(String[] args) {
+                try {
+                    FileInputStream fis = new FileInputStream("sessionData.ser");
+                    ObjectInputStream ois = new ObjectInputStream(fis);
+                    SessionData session = (SessionData) ois.readObject();
+                    System.out.println("Потребител: " + session.getUser());
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+            </code></pre>
+        
+            <p>
+                Ако атакуващият успее да подмени съдържанието на файла <code>sessionData.ser</code> със зловреден обект, те биха могли да изпълнят произволен код при десериализацията. Например, вместо да възстанови валиден обект, той може да зареди обект, който изпълнява опасни команди на системата.
+            </p>
+        </div>
+        </section>
+
+        <section id="attacks">
+            <h2>Типични атаки чрез несигурна десериализация</h2>
+            <button onclick="toggleSerialization('attack-content')" style="margin-bottom: 10px;">Показване/Скриване на Секцията</button>
+            <div id="attack-content">
+            <p>Атаките чрез несигурна десериализация могат да бъдат разделени на два основни типа:</p>
+            <ul>
+                <li><strong>Атаки свързани с обекти и структури от данни</strong> – когато атакуващият модифицира логиката на приложението или извършва произволно изпълнение на код, ако приложението разполага с класове, които могат да променят поведението си по време или след десериализацията.</li>
+                <li><strong>Атаки за манипулация на данни</strong> – например атаки, свързани с контрол на достъп, при които се използват съществуващи структури от данни, но тяхното съдържание е променено от атакуващия.</li>
+            </ul>
+            <p>Десериализацията може да бъде използвана в приложения за различни цели, като:</p>
+            <ul>
+                <li>Комуникация между отдалечени процеси (RPC/IPC)</li>
+                <li>Протоколи за предаване на данни, уеб услуги, съобщителни брокери</li>
+                <li>Кеширане и персистентност на данни</li>
+                <li>Бази данни, кеш сървъри, файлови системи</li>
+                <li>HTTP бисквитки, HTML формуляри, токени за автентикация на API</li>
+            </ul>
+            </div>
+        </section>
+
+        
+        <section id="attack-scenarios">
+            <h2>Примери за атаки чрез несигурна десериализация</h2>
+            <button onclick="toggleSerialization('scenarios-content')" style="margin-bottom: 10px;">Показване/Скриване на Секцията</button>
+            <div id="scenarios-content">
+            <h3>Сценарий #1: React приложение и Spring Boot микросервиз</h3>
+            <p>React приложение извиква набор от микросервизи на Spring Boot. Като функционални програмисти, те се опитват да осигурят, че техният код е неизменяем. Решението, което избират, е сериализацията на състоянието на потребителя и неговото предаване с всяко заявка. Атакуващият забелязва "R00" Java обект подписа и използва инструмента Java Serial Killer за да осъществи отдалечено изпълнение на код на сървъра на приложението.</p>
+        
+            <h3>Сценарий #2: PHP форум и манипулация на бисквитки</h3>
+            <p>PHP форум използва сериализация на PHP обекти за запазване на "супер" бисквитка, съдържаща потребителския ID, роля, хеш на парола и други състояния. Атакуващият променя сериализирания обект, за да си присвои администраторски права.</p>
+        
+            <!-- Таблица със сериализираните данни -->
+            <table class="attack-table">
+                <thead>
+                    <tr>
+                        <th>Оригинален обект</th>
+                        <th>Модифициран обект (Атака)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <pre>
+        a:4:{i:0;i:132;i:1;s:7:"Mallory";i:2;s:4:"user";i:3;s:32:"b6a8b3bea87fe0e05022f8f3c88bc960";}
+                            </pre>
+                        </td>
+                        <td>
+                            <pre>
+        a:4:{i:0;i:1;i:1;s:5:"Alice";i:2;s:5:"admin";i:3;s:32:"b6a8b3bea87fe0e05022f8f3c88bc960";}
+                            </pre>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        </section>
+        
+
+        <section id="protection">
+            <h2>Как да се защитим срещу несигурна десериализация?</h2>
+            <button onclick="toggleSerialization('protection-content')" style="margin-bottom: 10px;">Показване/Скриване на Секцията</button>
+            <div id="protection-content">
+            <p>За да се предпазим от тази уязвимост, трябва да следваме няколко ключови стъпки:</p>
+            <ul>
+                <li>Използване на безопасни формати за десериализация (например JSON вместо Pickle в Python)</li>
+                <li>Валидация на входните данни преди десериализация</li>
+                <li>Използване на цифрови подписи за проверка на автентичността на сериализираните данни</li>
+                <li>Обработка на грешки, за да се предотврати изпълнение на зловреден код при неуспешна десериализация</li>
+            </ul>
+        </div>
+        </section>
+
+        <section id="prevention">
+            <h2>Как да предотвратим несигурна десериализация?</h2>
+            <button onclick="toggleSerialization('prevention-content')" style="margin-bottom: 10px;">Показване/Скриване на Секцията</button>
+            <div id="prevention-content">
+            <p>Единственият безопасен архитектурен модел е да не се приемат сериализирани обекти от ненадеждни източници или да се използват формати за сериализация, които позволяват само примитивни типове данни. Ако това не е възможно, могат да се приложат някои от следните мерки:</p>
+            <ul>
+                <li><strong>Изпълнение на проверки за интегритет</strong>, като цифрови подписи върху сериализираните обекти, за да се предотврати създаването на враждебни обекти или манипулиране на данни.</li>
+                <li><strong>Строги типови ограничения при десериализацията</strong>, преди създаване на обекта, тъй като кодът обикновено очаква определен набор от класове. Но трябва да се има предвид, че методът може да бъде заобиколен, така че не трябва да се разчита само на него.</li>
+                <li><strong>Изолиране и изпълнение на кода, който десериализира</strong>, в нископривилегировани среди, когато е възможно.</li>
+                <li><strong>Логване на изключения и грешки при десериализация</strong>, като например когато входният тип не е очакваният тип или когато десериализацията хвърля изключения.</li>
+                <li><strong>Ограничаване или мониторинг на входящия и изходящия трафик</strong> от контейнери или сървъри, които извършват десериализация.</li>
+                <li><strong>Мониторинг на процеса на десериализация</strong> и алармирания при често десериализиране от потребителите.</li>
+            </ul>
+        </div>
+        </section>
+
+        <section id="conclusion">
+            <h2>Заключение</h2>
+            <p>Несигурната десериализация е сериозна заплаха за уеб приложенията, но с правилни практики за сигурност и внимателно управление на входните данни, може да се предотврати тази уязвимост. Важно е да се използват безопасни формати за десериализация и да се прилагат техники за валидиране и подписване на данни.</p>
+        </section>
+
+        <section id="sources">
+            <h2>Източници</h2>
+            <p>За написването на този реферат са използвани следните източници:</p>
+            <ul>
+                <li>[1] OWASP, "Deserialization of Untrusted Data", <a href="https://owasp.org/www-project-top-ten/2017/A8_2017-Insecure_Deserialization" target="_blank">https://owasp.org/www-project-top-ten/2017/A8_2017-Insecure_Deserialization</a>, последно посетен на 2024-12-03.</li>
+                <li>[2] "A Guide to Secure Deserialization", <a href="https://www.acunetix.com/blog/articles/secure-deserialization/" target="_blank">https://www.acunetix.com/blog/articles/secure-deserialization/</a>, последно посетен на 2024-12-03.</li>
+                <li>[3] "Insecure Deserialization 2017 OWASP", <a href="https://www.wallarm.com/what/a8-insecure-deserialization-2017-owasp" target="_blank">https://www.wallarm.com/what/a8-insecure-deserialization-2017-owasp</a>, последно посетен на 2024-12-03.</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Уязвимости в уеб приложения - Несигурна десериализация (OWASP-A8)</p>
+    </footer>
+
+    <script src="js/scrypts.js"></script>
+</body>
+</html>
+
